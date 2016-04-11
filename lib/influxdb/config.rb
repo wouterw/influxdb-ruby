@@ -1,3 +1,5 @@
+require "thread"
+
 module InfluxDB
   # InfluxDB client configuration
   class Config
@@ -22,7 +24,7 @@ module InfluxDB
                   :denormalize,
                   :epoch
 
-    attr_reader :async, :udp
+    attr_reader :async, :udp, :mutex
 
     # rubocop:disable all
     def initialize(opts = {})
@@ -56,6 +58,8 @@ module InfluxDB
         when false
           0
         end
+
+      @mutex = Mutex.new
     end
 
     def udp?
@@ -67,7 +71,9 @@ module InfluxDB
     end
 
     def next_host
-      @hosts_enumerator.next
+      @mutex.synchronize {
+        @hosts_enumerator.next
+      }
     end
   end
 end
